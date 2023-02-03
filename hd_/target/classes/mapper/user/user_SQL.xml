@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="user">
+
+	<!-- 회원이 마이페이지에서 자신의 예약정보를 확인 -->
+	<select id="selectReservList" parameterType="hashmap" resultType="hashmap">
+		<include refid="common.pagingPre"/>  
+		select 
+		rownum rnum, a.r_idx, a.r_name, a.r_cafe_name,a.r_room_name, a.r_c_idx, a.c_idx,
+		a.r_useTime, a.r_date, a.r_possibleTime, 
+		a.r_people, a.r_status, a.r_cafe_location , d.v_r_idx
+		from reserv a 
+                join cafeInfo c        on a.c_idx = c.cafe_idx
+                join owner_goodsReg b   on   a.r_c_idx = b.goodsreg_idx
+                left join review d 	on a.r_idx=d.v_r_idx
+		where a.r_id = #{m_id} and b.goodsReg_del_gb = 'N'
+		order by a.r_idx desc
+		<include refid="common.pagingPost"/>  
+	</select>
+
+
+	<!-- 회원이 마이페이지에서 자신의 가입정보를 확인 -->
+	<select id="selectUserInfo" parameterType="hashmap" resultType="hashmap">
+		<![CDATA[
+		select * from members where m_id = #{m_id,jdbcType=VARCHAR}
+		]]>
+	</select>
+	
+	<!-- 사장님의 카페에 예약한 회원이 있으면 탈퇴불가 -->
+	<select id="checkReserv" parameterType="hashmap" resultType="hashmap">
+		<![CDATA[
+		select r.r_name,r.r_status , c.cafe_own_id
+		from cafeInfo c join reserv r
+			on c.cafe_idx = r.c_idx
+		where cafe_own_id = #{m_id} and (r.r_status in (1,2,3))
+		]]>
+	</select>
+	
+	<!-- 회원이 자신의 개인정보 수정 -->
+	<update id="updateUserInfo" parameterType="hashmap">
+		<![CDATA[
+		update members
+		set 
+		m_name = #{M_NAME},
+		m_email = #{M_EMAIL}, 
+		m_cellphone = #{M_CELLPHONE},
+		m_pw = #{M_PW},
+		m_mod_date = sysdate
+		where m_id = #{M_ID}
+		]]>
+	</update>
+	
+	<!-- 회원이 마이페이지에서 자신의 예약을 취소 -->
+	 <update id="cancelReserv" parameterType="hashmap">
+            <![CDATA[
+            update reserv
+            set r_status = 0
+            where r_idx = #{R_IDX}
+            ]]>
+ 	</update>
+ 	
+ 	<!-- 회원의 탈퇴 -->
+ 	<update id="deleteUser" parameterType="hashmap" >
+		update members
+		set m_del_gb = 'Y'
+		where m_id = #{M_ID}
+	</update>
+	
+	<select id="selectZzim" parameterType="hashmap" resultType="hashmap">
+			<include refid="common.pagingPre"/>  
+						select rownum rnum , a.zim_idx, a.zim_m_id, a.zim_goodsReg_Idx, a.zim_reg_date,
+						b.cafe_idx ,b.cafe_name,b.cafe_tel ,b.cafe_location
+						,b.cafe_offday ,b.cafe_openHour ,b.cafe_closeHour ,b.cafe_del_gb
+						from zzim a join cafeInfo b on  zim_goodsReg_idx=cafe_idx
+						where a.zim_m_id = #{m_id}
+						order by zim_reg_date desc
+        	<include refid="common.pagingPost"/>
+	</select>
+	
+	<!-- 회원의 환불요청 -->
+ 	<update id="updateRefund" parameterType="hashmap" >
+		update reserv
+		set r_status = 5 , 
+		r_msg = #{r_msg}
+		where r_idx = #{r_idx}
+	</update>
+
+</mapper>

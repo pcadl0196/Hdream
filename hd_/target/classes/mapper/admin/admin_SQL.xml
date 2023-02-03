@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="admin">
+
+	<!-- 유저 리스트 -->
+	<select id="userList" resultType="hashmap">
+		<include refid="common.pagingPre"/>
+		select rownum rnum, m_id, m_name, m_pw, m_email, m_cellphone, m_reg_date, m_mod_date, m_own_num, m_type, m_del_gb
+		from members
+		where (
+		<trim prefixOverrides="AND">
+			<if test="m_type == 0">m_type = 0</if>
+			<if test="m_type == 1">m_type = 1</if>
+			<if test="m_del_gb == 'Y'.toString()">AND m_del_gb = 'Y'</if>
+			<if test="m_del_gb != 'Y'.toString()">AND m_del_gb = 'N'</if>
+			<choose>
+				<when test="searchType == 'A'.toString()">
+					AND (m_id like '%' || #{keyword} || '%' OR m_name like '%' || #{keyword} || '%')
+				</when>
+				<when test="searchType == 'I'.toString()">AND (m_id like '%' || #{keyword} || '%')</when>
+				<when test="searchType == 'N'.toString()">AND (m_name like '%' || #{keyword} || '%')</when>
+				<when test="searchType == 'E'.toString()">AND (m_email like '%' || #{keyword} || '%')</when>
+				<when test="searchType == 'P'.toString()">AND (m_cellphone like '%' || #{keyword} || '%')</when>
+				<when test="searchType == 'O'.toString()">AND (m_own_num like '%' || #{keyword} || '%')</when>
+			</choose>
+		</trim>
+		)
+		<include refid="common.pagingPost"/>
+	</select>
+	
+	<!-- 유저 상세정보 -->
+	<select id="selectUserDetail" resultType="hashmap">
+		select * from members where m_id = #{m_id}
+	</select>
+	
+	<!-- 유저 정보 수정 -->
+	<update id="modifyUser">
+		update members 
+		set m_name = #{m_name},
+			m_pw = #{m_pw},
+			<if test="m_email != null">m_email = #{m_email},</if>
+			m_cellphone = #{m_cellphone},
+			m_mod_date = sysdate,
+			m_type = #{m_type},
+			<if test="m_type == 1">m_own_num = #{m_own_num},</if>
+			m_del_gb = #{m_del_gb}
+		where m_id = #{m_id}
+	</update>
+</mapper>

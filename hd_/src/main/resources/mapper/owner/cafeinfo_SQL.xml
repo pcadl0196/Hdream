@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="owner">
+	
+	<select id="selectCafeList" parameterType="hashmap" resultType="hashmap">
+		<![CDATA[
+			SELECT
+			   		    CAFE_IDX,
+						CAFE_NAME,
+						CAFE_REG_DATE
+			FROM
+			   CAFEINFO
+			WHERE
+				CAFE_DEL_GB = 'N'
+			AND 
+				CAFE_OWN_ID = #{m_id,jdbcType=VARCHAR}
+				
+			ORDER BY CAFE_IDX DESC
+		]]>
+	</select>
+	
+	<insert id="insertCafeinfoTable" parameterType="hashmap" useGeneratedKeys="true" keyProperty="CAFE_IDX">
+		<selectKey keyProperty="CAFE_IDX" resultType="string" order="BEFORE">
+			SELECT CAFEINFO_C_IDX_SEQ.NEXTVAL FROM DUAL
+		</selectKey>
+		<![CDATA[
+					INSERT INTO CAFEINFO
+					(
+						CAFE_IDX,
+						CAFE_NAME,
+						CAFE_CONTENTS,
+						CAFE_TEL,
+						CAFE_LOCATION,
+						CAFE_OPENHOUR,
+						CAFE_CLOSEHOUR,
+						CAFE_PARKING,
+						CAFE_NOTICE,
+						CAFE_REG_DATE,
+						CAFE_DEL_GB,
+						CAFE_ACCOUNTINFO,
+						CAFE_OWN_ID,
+						CAFE_OFFDAY
+					)
+					VALUES
+					(
+						#{CAFE_IDX},
+						#{CAFE_NAME},
+						#{CAFE_CONTENTS},
+						#{CAFE_TEL},
+						#{CAFE_LOCATION},
+						#{CAFE_OPENHOUR},
+						#{CAFE_CLOSEHOUR},
+						#{CAFE_PARKING},
+						#{CAFE_NOTICE},
+						SYSDATE,
+						'N',
+						#{CAFE_ACCOUNTINFO},
+						#{CAFE_OWN_ID},
+						#{CAFE_OFFDAY}
+					)
+				]]>
+	</insert>
+	
+	<insert id="insertFileOfCafeinfo" parameterType="hashmap">
+			<![CDATA[
+					INSERT INTO CAFEPHOTO
+					(
+						CP_IDX,
+						CP_BOARD_IDX,
+						CP_BOARD_TYPE,
+						CP_DEL_GB,
+						CP_ORIGINAL_FILE_NAME,
+						CP_STORED_FILE_NAME,
+						CP_FILE_SIZE,
+						CP_REG_DATE
+					)
+					VALUES
+					(
+						CAFEPHOTO_SEQ.NEXTVAL,
+						#{CP_BOARD_IDX},
+						'cafeInfo',
+						'N',
+						#{CP_ORIGINAL_FILE_NAME},
+						#{CP_STORED_FILE_NAME},
+						#{CP_FILE_SIZE},
+						SYSDATE
+					)
+				]]>
+	</insert>
+	
+	<select id="selectCafeinfoDetail" parameterType="hashmap" resultType="hashmap">
+			<![CDATA[
+				SELECT 
+						CAFE_IDX,
+						CAFE_NAME,
+						CAFE_CONTENTS,
+						CAFE_TEL,
+						CAFE_LOCATION,
+						CAFE_PARKING,
+						CAFE_NOTICE,
+						CAFE_REG_DATE,
+						CAFE_ACCOUNTINFO,
+						CAFE_OWN_ID,
+						CAFE_OFFDAY,
+						CAFE_OPENHOUR,
+						CAFE_CLOSEHOUR
+				FROM
+						CAFEINFO
+				WHERE 
+						CAFE_IDX = #{CAFE_IDX}
+				AND 
+						CAFE_OWN_ID = #{m_id,jdbcType=VARCHAR}
+			]]>
+	</select>
+	
+	<update id="updateCafeinfo" parameterType="hashmap">
+		<![CDATA[
+				UPDATE CAFEINFO
+				
+				SET 
+						CAFE_NAME = #{CAFE_NAME},
+						CAFE_CONTENTS = #{CAFE_CONTENTS},
+						CAFE_TEL = #{CAFE_TEL},
+						CAFE_LOCATION = #{CAFE_LOCATION},
+						CAFE_PARKING = #{CAFE_PARKING},
+						CAFE_NOTICE = #{CAFE_NOTICE},
+						CAFE_REG_DATE = SYSDATE,
+						CAFE_ACCOUNTINFO = #{CAFE_ACCOUNTINFO},
+						CAFE_OFFDAY = #{CAFE_OFFDAY},
+						CAFE_OPENHOUR = #{CAFE_OPENHOUR},
+						CAFE_CLOSEHOUR = #{CAFE_CLOSEHOUR}
+						
+				WHERE 
+						CAFE_IDX = #{CAFE_IDX}
+
+		]]>
+	</update>
+	
+	<update id="deleteCafeinfo" parameterType="hashmap">
+		<![CDATA[
+				UPDATE CAFEINFO
+				
+				SET 
+						CAFE_DEL_GB = 'Y'
+				WHERE 
+						CAFE_IDX = #{CAFE_IDX}
+
+		]]>
+	</update>
+	
+	<update id="deleteGoodsOfDeletedCafeinfo" parameterType="hashmap">
+		<![CDATA[
+				UPDATE OWNER_GOODSREG
+				
+				SET 
+						GOODSREG_DEL_GB = 'Y'
+				WHERE 
+						GOODSREG_CAFE_IDX = #{CAFE_IDX}
+
+		]]>
+	</update>
+	
+	<select id="selectFileListFromCafeinfo" parameterType="hashmap" resultType="hashmap">
+		<![CDATA[
+				SELECT
+					CP_IDX,
+					CP_ORIGINAL_FILE_NAME,
+					ROUND(CP_FILE_SIZE/1024, 1) AS CP_FILE_SIZE
+				FROM
+					CAFEPHOTO
+				WHERE
+					CP_BOARD_IDX = (SELECT CAFE_IDX FROM CAFEINFO WHERE CAFE_OWN_ID = #{m_id,jdbcType=VARCHAR} AND CAFE_DEL_GB = 'N')
+				AND 
+					CP_BOARD_TYPE = 'cafeInfo'
+				AND
+					CP_DEL_GB = 'N'
+		]]>
+	
+	</select>
+	
+	<update id="deleteFileListOfCafeinfo" parameterType="hashmap">
+		<![CDATA[
+				UPDATE CAFEPHOTO
+				
+				SET 
+						CP_DEL_GB = 'Y'
+				WHERE 
+						CP_BOARD_IDX = #{CAFE_IDX}
+				AND
+						CP_BOARD_TYPE = 'cafeInfo'
+
+		]]>
+	</update>
+	
+	<update id="updateFileOfCafeinfo" parameterType="hashmap">
+		<![CDATA[
+				UPDATE CAFEPHOTO
+				
+				SET 
+						CP_DEL_GB = 'N'
+				WHERE 
+						CP_IDX = #{FILE_IDX}
+
+		]]>
+	</update>
+	
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
